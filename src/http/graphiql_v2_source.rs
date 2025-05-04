@@ -21,6 +21,15 @@ pub enum Credentials {
     Omit,
 }
 
+#[derive(Serialize)]
+struct GraphiQLVersion<'a>(&'a str);
+
+impl<'a> Default for GraphiQLVersion<'a> {
+    fn default() -> Self {
+        Self("3")
+    }
+}
+
 /// A builder for constructing a GraphiQL (v2) HTML page.
 ///
 /// # Example
@@ -39,7 +48,7 @@ pub enum Credentials {
 pub struct GraphiQLSource<'a> {
     endpoint: &'a str,
     subscription_endpoint: Option<&'a str>,
-    version: Option<&'a str>,
+    version: GraphiQLVersion<'a>,
     headers: Option<HashMap<&'a str, &'a str>>,
     title: Option<&'a str>,
     credentials: Credentials,
@@ -82,7 +91,7 @@ impl<'a> GraphiQLSource<'a> {
     /// Sets the version of GraphiQL to be fetched.
     pub fn version(self, value: &'a str) -> GraphiQLSource<'a> {
         GraphiQLSource {
-            version: Some(value),
+            version: GraphiQLVersion(value),
             ..self
         }
     }
@@ -165,13 +174,13 @@ mod tests {
       src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"
     ></script>
     <link rel="icon" href="https://graphql.org/favicon.ico">
-    <link rel="stylesheet" href="https://unpkg.com/graphiql/graphiql.min.css" />
+    <link rel="stylesheet" href="https://unpkg.com/graphiql@3/graphiql.min.css" />
   </head>
 
   <body>
     <div id="graphiql">Loading...</div>
     <script
-      src="https://unpkg.com/graphiql/graphiql.min.js"
+      src="https://unpkg.com/graphiql@3/graphiql.min.js"
       type="application/javascript"
     ></script>
     <script>
@@ -242,13 +251,13 @@ mod tests {
       src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"
     ></script>
     <link rel="icon" href="https://graphql.org/favicon.ico">
-    <link rel="stylesheet" href="https://unpkg.com/graphiql/graphiql.min.css" />
+    <link rel="stylesheet" href="https://unpkg.com/graphiql@3/graphiql.min.css" />
   </head>
 
   <body>
     <div id="graphiql">Loading...</div>
     <script
-      src="https://unpkg.com/graphiql/graphiql.min.js"
+      src="https://unpkg.com/graphiql@3/graphiql.min.js"
       type="application/javascript"
     ></script>
     <script>
