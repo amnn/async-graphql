@@ -50,6 +50,7 @@ pub struct SchemaBuilder<Query, Mutation, Subscription> {
     complexity: Option<usize>,
     depth: Option<usize>,
     recursive_depth: usize,
+    subscription_resolution_concurrency: usize,
     extensions: Vec<Box<dyn ExtensionFactory>>,
     custom_directives: HashMap<String, Box<dyn CustomDirectiveFactory>>,
 }
@@ -112,6 +113,17 @@ impl<Query, Mutation, Subscription> SchemaBuilder<Query, Mutation, Subscription>
     #[must_use]
     pub fn limit_recursive_depth(mut self, depth: usize) -> Self {
         self.recursive_depth = depth;
+        self
+    }
+
+    /// Set how many subscription payloads may be resolved concurrently (default: 1, i.e. serial).
+    ///
+    /// A subscription resolves its payloads one at a time by default. Raising this lets up to `n`
+    /// payloads resolve at once, with output order preserved, so their `DataLoader` reads coalesce
+    /// instead of running one round trip per payload. Values below 1 are clamped to 1.
+    #[must_use]
+    pub fn subscription_resolution_concurrency(mut self, n: usize) -> Self {
+        self.subscription_resolution_concurrency = n.max(1);
         self
     }
 
@@ -240,6 +252,7 @@ impl<Query, Mutation, Subscription> SchemaBuilder<Query, Mutation, Subscription>
                 registry: self.registry,
                 data: self.data,
                 custom_directives: self.custom_directives,
+                subscription_resolution_concurrency: self.subscription_resolution_concurrency,
             })),
         }))
     }
@@ -250,6 +263,9 @@ pub struct SchemaEnvInner {
     pub registry: Registry,
     pub data: Data,
     pub custom_directives: HashMap<String, Box<dyn CustomDirectiveFactory>>,
+    /// How many subscription payloads may be resolved concurrently (>= 1). Read by the subscription
+    /// derive to buffer item resolution. Default 1 (serial).
+    pub subscription_resolution_concurrency: usize,
 }
 
 #[doc(hidden)]
@@ -351,6 +367,7 @@ where
             complexity: None,
             depth: None,
             recursive_depth: 32,
+            subscription_resolution_concurrency: 1,
             extensions: Default::default(),
             custom_directives: Default::default(),
         }
@@ -830,7 +847,6 @@ pub(crate) async fn prepare_request(
         extension_data: Arc::new(request.data),
         http_headers: Default::default(),
         introspection_mode: request.introspection_mode,
-        errors: Default::default(),
     };
     Ok((QueryEnv::new(env), validation_result.cache_control))
 }
